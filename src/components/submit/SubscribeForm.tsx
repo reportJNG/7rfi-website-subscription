@@ -1,9 +1,9 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Camera, ChevronDown, FileText, Loader2, Lock, Mail, Phone, User, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { subscriberFormInputSchema, parseFormInput } from '@/lib/validations/subscriber.schema';
+import { subscriberFormInputSchema, subscriberSchema, parseFormInput } from '@/lib/validations/subscriber.schema';
 import type { SubscriberFormInput } from '@/lib/validations/subscriber.schema';
 import type { City } from '@/types';
 import { checkEmailExists, checkPhoneExists, insertSubscriber, uploadProfilePicture, uploadCV } from '@/lib/supabase/api';
@@ -16,6 +16,11 @@ interface SubscribeFormProps {
 const inputClass =
   'harafi-input w-full';
 
+const PROFILE_ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const PROFILE_MAX_SIZE = 5 * 1024 * 1024;
+const CV_ACCEPTED_TYPES = ['application/pdf'];
+const CV_MAX_SIZE = 10 * 1024 * 1024;
+
 export function SubscribeForm({ cities }: SubscribeFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -23,9 +28,11 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const [profileFileName, setProfileFileName] = useState<string | null>(null);
   const [cvFileName, setCvFileName] = useState<string | null>(null);
+  const [cityOpen, setCityOpen] = useState(false);
 
   const profileInputRef = useRef<HTMLInputElement>(null);
   const cvInputRef = useRef<HTMLInputElement>(null);
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -51,10 +58,44 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
 
   const genderValue = watch('gender');
   const cityValue = watch('city_id');
+  const selectedCity = cities.find((city) => city.id.toString() === cityValue?.toString());
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (!cityDropdownRef.current?.contains(event.target as Node)) {
+        setCityOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setCityOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
 
   const setProfileFile = useCallback(
     (file?: File | null) => {
       if (!file) return;
+      if (!PROFILE_ACCEPTED_TYPES.includes(file.type)) {
+        const message = 'صيغة الصورة يجب أن تكون JPG أو PNG أو WebP';
+        setError('profile_picture', { message });
+        toast.error(message);
+        return;
+      }
+      if (file.size > PROFILE_MAX_SIZE) {
+        const message = 'الصورة يجب أن تكون أقل من 5 ميغابايت';
+        setError('profile_picture', { message });
+        toast.error(message);
+        return;
+      }
       setValue('profile_picture', file, { shouldValidate: true });
       setProfileFileName(file.name);
       const reader = new FileReader();
@@ -62,17 +103,29 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
       reader.readAsDataURL(file);
       clearErrors('profile_picture');
     },
-    [clearErrors, setValue],
+    [clearErrors, setError, setValue],
   );
 
   const setCvFile = useCallback(
     (file?: File | null) => {
       if (!file) return;
+      if (!CV_ACCEPTED_TYPES.includes(file.type)) {
+        const message = 'السيرة الذاتية يجب أن تكون ملف PDF';
+        setError('cv_file', { message });
+        toast.error(message);
+        return;
+      }
+      if (file.size > CV_MAX_SIZE) {
+        const message = 'ملف السيرة الذاتية يجب أن يكون أقل من 10 ميغابايت';
+        setError('cv_file', { message });
+        toast.error(message);
+        return;
+      }
       setValue('cv_file', file, { shouldValidate: true });
       setCvFileName(file.name);
       clearErrors('cv_file');
     },
-    [clearErrors, setValue],
+    [clearErrors, setError, setValue],
   );
 
   const removeProfilePicture = () => {
@@ -133,11 +186,14 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
         }
       }
 
-      const parsed = parseFormInput(formData);
-      await insertSubscriber({
-        ...parsed,
+      const subscriber = subscriberSchema.parse({
+        ...parseFormInput(formData),
         profile_picture_url: profilePictureUrl,
         cv_url: cvUrl,
+      });
+
+      await insertSubscriber({
+        ...subscriber,
       });
 
       setIsSuccess(true);
@@ -164,7 +220,7 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
             type="text"
             placeholder="مثال: أحمد محمد العلي"
             {...register('full_name')}
-            className={`${inputClass} pl-11 ${errors.full_name ? 'border-danger' : ''}`}
+            className={`${inputClass} pl-11 ${errors.full_name ? 'harafi-input-error' : ''}`}
             disabled={isSubmitting}
           />
           <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber opacity-70" />
@@ -178,7 +234,7 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
             placeholder="example@email.com"
             dir="ltr"
             {...register('email')}
-            className={`${inputClass} pl-11 text-right ${errors.email ? 'border-danger' : ''}`}
+            className={`${inputClass} pl-11 text-right ${errors.email ? 'harafi-input-error' : ''}`}
             disabled={isSubmitting}
           />
           <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber opacity-70" />
@@ -192,7 +248,7 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
             placeholder="09XXXXXXXX"
             dir="ltr"
             {...register('phone')}
-            className={`${inputClass} pl-11 text-right ${errors.phone ? 'border-danger' : ''}`}
+            className={`${inputClass} pl-11 text-right ${errors.phone ? 'harafi-input-error' : ''}`}
             disabled={isSubmitting}
           />
           <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber opacity-70" />
@@ -207,7 +263,7 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
             min={15}
             max={80}
             {...register('age')}
-            className={`${inputClass} ${errors.age ? 'border-danger' : ''}`}
+            className={`${inputClass} ${errors.age ? 'harafi-input-error' : ''}`}
             disabled={isSubmitting}
           />
         </Field>
@@ -231,7 +287,7 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
                     active
                       ? 'border-amber bg-amber font-bold text-white'
                       : 'border-border bg-white text-navy hover:border-amber'
-                  } ${errors.gender ? 'border-danger' : ''}`}
+                  } ${errors.gender ? 'border-danger focus-visible:outline-danger' : ''}`}
                   disabled={isSubmitting}
                 >
                   {option.label}
@@ -243,25 +299,53 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
       </div>
 
       <Field label="المحافظة" required error={errors.city_id?.message}>
-        <div className="relative">
-          <select
-            {...register('city_id')}
-            value={cityValue?.toString() || ''}
-            onChange={(event) => {
-              setValue('city_id', event.target.value, { shouldValidate: true });
-              clearErrors('city_id');
+        <div ref={cityDropdownRef} className="relative">
+          <input type="hidden" {...register('city_id')} />
+          <button
+            type="button"
+            onClick={() => {
+              if (!isSubmitting) setCityOpen((open) => !open);
             }}
-            className={`${inputClass} appearance-none cursor-pointer pl-11 ${errors.city_id ? 'border-danger' : ''}`}
+            className={`${inputClass} flex items-center justify-between gap-3 text-right ${
+              errors.city_id ? 'harafi-input-error' : ''
+            } ${isSubmitting ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
             disabled={isSubmitting}
+            aria-haspopup="listbox"
+            aria-expanded={cityOpen}
           >
-            <option value="">اختر المحافظة</option>
-            {cities.map((city) => (
-              <option key={city.id} value={city.id}>
-                {city.name_ar}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber" />
+            <span className={selectedCity ? 'text-navy' : 'text-slate-400'}>
+              {selectedCity?.name_ar ?? 'اختر المحافظة'}
+            </span>
+            <ChevronDown className={`h-4 w-4 shrink-0 text-amber transition-transform ${cityOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {cityOpen && (
+            <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-lg border border-border bg-white shadow-soft">
+              <div className="max-h-56 overflow-y-auto p-1" role="listbox" aria-label="المحافظة">
+                {cities.map((city) => {
+                  const active = selectedCity?.id === city.id;
+                  return (
+                    <button
+                      key={city.id}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      onClick={() => {
+                        setValue('city_id', city.id.toString(), { shouldValidate: true });
+                        clearErrors('city_id');
+                        setCityOpen(false);
+                      }}
+                      className={`flex h-10 w-full items-center rounded-md px-3 text-right font-noto text-sm transition-colors ${
+                        active ? 'bg-sand-light font-semibold text-amber' : 'text-navy hover:bg-sand-light'
+                      }`}
+                    >
+                      {city.name_ar}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </Field>
 
@@ -276,7 +360,7 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
           onPick={() => profileInputRef.current?.click()}
           onRemove={removeProfilePicture}
           onDrop={setProfileFile}
-          accept="image/jpeg,image/png,image/webp"
+          hasError={!!errors.profile_picture}
         />
         <input
           ref={profileInputRef}
@@ -298,7 +382,7 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
           onPick={() => cvInputRef.current?.click()}
           onRemove={removeCV}
           onDrop={setCvFile}
-          accept="application/pdf"
+          hasError={!!errors.cv_file}
         />
         <input
           ref={cvInputRef}
@@ -374,7 +458,7 @@ function UploadZone({
   onPick,
   onRemove,
   onDrop,
-  accept,
+  hasError,
 }: {
   icon: React.ReactNode;
   hint: string;
@@ -385,11 +469,9 @@ function UploadZone({
   onPick: () => void;
   onRemove: () => void;
   onDrop: (file: File | null) => void;
-  accept: string;
+  hasError?: boolean;
 }) {
   const [drag, setDrag] = useState(false);
-
-  const acceptsFile = (file: File) => accept.split(',').includes(file.type);
 
   return (
     <div
@@ -404,11 +486,17 @@ function UploadZone({
         setDrag(false);
         if (disabled) return;
         const file = event.dataTransfer.files?.[0];
-        if (file && acceptsFile(file)) onDrop(file);
+        if (file) onDrop(file);
       }}
       className={`relative flex min-h-[108px] items-center justify-center rounded-lg border border-dashed px-4 py-3 transition-colors ${
         disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
-      } ${drag ? 'border-amber bg-amber/[0.06]' : 'border-border bg-white hover:border-amber'}`}
+      } ${
+        hasError
+          ? 'border-danger bg-danger/5 hover:border-danger'
+          : drag
+            ? 'border-amber bg-amber/[0.06]'
+            : 'border-border bg-white hover:border-amber'
+      }`}
     >
       {!fileName ? (
         <div className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-right">

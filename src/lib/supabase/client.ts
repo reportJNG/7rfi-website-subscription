@@ -6,7 +6,7 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || '';
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey);
 export const missingSupabaseConfigMessage =
-  'Missing Supabase configuration. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env.local file.';
+  'Missing Supabase configuration. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.';
 
 let supabaseClient: SupabaseClient<Database> | null = null;
 

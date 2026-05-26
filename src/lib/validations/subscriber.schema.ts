@@ -1,18 +1,22 @@
 import { z } from 'zod';
 
 const SYRIAN_PHONE_REGEX = /^09[3456789][0-9]{7}$/;
+const PERSON_NAME_REGEX = /^[\p{L}\p{M}][\p{L}\p{M}\s'-]{1,148}[\p{L}\p{M}]$/u;
+const PERSON_NAME_MESSAGE = 'الاسم يجب أن يحتوي على أحرف فقط بدون رموز أو أرقام';
 
 export const subscriberSchema = z.object({
   full_name: z
     .string()
     .trim()
     .min(3, 'الاسم يجب أن يكون 3 أحرف على الأقل')
-    .max(150, 'الاسم طويل جداً'),
+    .max(150, 'الاسم طويل جداً')
+    .regex(PERSON_NAME_REGEX, PERSON_NAME_MESSAGE),
 
   email: z
     .string()
     .trim()
     .toLowerCase()
+    .max(254, 'البريد الإلكتروني طويل جداً')
     .email('البريد الإلكتروني غير صالح'),
 
   phone: z
@@ -44,12 +48,14 @@ export const subscriberFormInputSchema = z.object({
     .string()
     .trim()
     .min(3, 'الاسم يجب أن يكون 3 أحرف على الأقل')
-    .max(150, 'الاسم طويل جداً'),
+    .max(150, 'الاسم طويل جداً')
+    .regex(PERSON_NAME_REGEX, PERSON_NAME_MESSAGE),
 
   email: z
     .string()
     .trim()
     .toLowerCase()
+    .max(254, 'البريد الإلكتروني طويل جداً')
     .email('البريد الإلكتروني غير صالح'),
 
   phone: z
@@ -59,8 +65,8 @@ export const subscriberFormInputSchema = z.object({
 
   age: z.string().refine(
     (value) => {
-      const number = Number.parseInt(value, 10);
-      return !Number.isNaN(number) && number >= 15 && number <= 80;
+      const number = Number(value);
+      return Number.isInteger(number) && number >= 15 && number <= 80;
     },
     { message: 'العمر يجب أن يكون بين 15 و 80 سنة' },
   ),
@@ -69,8 +75,8 @@ export const subscriberFormInputSchema = z.object({
 
   city_id: z.string().refine(
     (value) => {
-      const number = Number.parseInt(value, 10);
-      return !Number.isNaN(number) && number > 0;
+      const number = Number(value);
+      return Number.isInteger(number) && number > 0;
     },
     { message: 'يرجى اختيار محافظة صحيحة' },
   ),
@@ -100,8 +106,8 @@ export function parseFormInput(input: SubscriberFormInput) {
     full_name: input.full_name,
     email: input.email,
     phone: input.phone,
-    age: Number.parseInt(input.age, 10),
+    age: Number(input.age),
     gender: input.gender as 'male' | 'female',
-    city_id: Number.parseInt(input.city_id, 10),
+    city_id: Number(input.city_id),
   };
 }

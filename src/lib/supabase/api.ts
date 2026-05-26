@@ -1,6 +1,14 @@
 import { getSupabaseClient } from './client';
 import type { City, SubscriberInsert } from '@/types';
 
+const PROFILE_FILE_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+const PROFILE_MAX_SIZE = 5 * 1024 * 1024;
+const CV_MAX_SIZE = 10 * 1024 * 1024;
+
 // Fetch all cities
 export async function getCities(): Promise<City[]> {
   const supabase = getSupabaseClient();
@@ -69,7 +77,15 @@ export async function getSubscriberCount(): Promise<number> {
 // Upload profile picture
 export async function uploadProfilePicture(file: File, userId: string): Promise<string> {
   const supabase = getSupabaseClient();
-  const fileExt = file.name.split('.').pop() || 'jpg';
+  const fileExt = PROFILE_FILE_TYPES[file.type];
+
+  if (!fileExt) {
+    throw new Error('صيغة الصورة يجب أن تكون JPG أو PNG أو WebP');
+  }
+  if (file.size > PROFILE_MAX_SIZE) {
+    throw new Error('الصورة يجب أن تكون أقل من 5 ميغابايت');
+  }
+
   const fileName = `${userId}_${Date.now()}.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
@@ -93,8 +109,15 @@ export async function uploadProfilePicture(file: File, userId: string): Promise<
 // Upload CV
 export async function uploadCV(file: File, userId: string): Promise<string> {
   const supabase = getSupabaseClient();
-  const fileExt = file.name.split('.').pop() || 'pdf';
-  const fileName = `${userId}_${Date.now()}.${fileExt}`;
+
+  if (file.type !== 'application/pdf') {
+    throw new Error('السيرة الذاتية يجب أن تكون ملف PDF');
+  }
+  if (file.size > CV_MAX_SIZE) {
+    throw new Error('ملف السيرة الذاتية يجب أن يكون أقل من 10 ميغابايت');
+  }
+
+  const fileName = `${userId}_${Date.now()}.pdf`;
 
   const { error: uploadError } = await supabase.storage
     .from('cvs')
