@@ -4,26 +4,31 @@
 
 @layer base {
   :root {
-    --background: 36 33% 97%;
-    --foreground: 0 0% 10%;
+    --background: 40 39% 95%;
+    --foreground: 209 39% 20%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 209 39% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
-    --primary: 35 55% 50%;
+    --popover-foreground: 209 39% 20%;
+    --primary: 34 60% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 52% 24%;
+    --secondary: 209 39% 20%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 36 33% 93%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 37 47% 81%;
-    --accent-foreground: 0 0% 10%;
-    --destructive: 0 72% 51%;
+    --muted: 38 33% 91%;
+    --muted-foreground: 215 16% 42%;
+    --accent: 36 42% 82%;
+    --accent-foreground: 209 39% 20%;
+    --destructive: 0 72% 42%;
     --destructive-foreground: 0 0% 98%;
-    --border: 210 30% 90%;
-    --input: 210 30% 90%;
-    --ring: 35 55% 50%;
-    --radius: 0.625rem;
+    --border: 36 28% 82%;
+    --input: 36 28% 82%;
+    --ring: 34 60% 45%;
+    --radius: 0.75rem;
+  }
+
+  html {
+    direction: rtl;
+    scroll-behavior: smooth;
   }
 
   * {
@@ -33,55 +38,53 @@
   body {
     @apply bg-parchment text-foreground font-noto antialiased;
     text-align: right;
+    font-feature-settings: "kern", "liga";
+    -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-cairo;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-cairo tracking-normal;
+  }
+
+  ::selection {
+    background: #B7792E;
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid #B7792E;
+    outline-offset: 3px;
+    border-radius: 10px;
   }
 }
 
 @layer components {
   .harafi-input {
-    @apply bg-parchment border border-navy/10 rounded-[10px] px-4 py-[14px] font-noto text-[15px] text-[#1A1A1A]
-           transition-all duration-200 outline-none;
-    @apply focus:border-amber focus:shadow-[0_0_0_3px_rgba(200,137,58,0.15)];
-    @apply placeholder:text-muted-foreground/50;
+    @apply h-[50px] rounded-lg border border-border bg-white px-4 font-noto text-[15px] text-navy outline-none transition-colors duration-200;
+    @apply placeholder:text-slate-400 focus:border-amber focus:shadow-input disabled:cursor-not-allowed disabled:bg-muted/60 disabled:text-muted-foreground;
   }
 
   .harafi-input-error {
-    @apply border-danger;
+    @apply border-danger focus:border-danger;
   }
 
   .harafi-btn-primary {
-    @apply bg-amber text-white font-cairo font-semibold rounded-full px-6 py-3
-           transition-all duration-300 cursor-pointer;
-    @apply hover:bg-amber-dark hover:shadow-cta;
-    @apply active:scale-[0.98];
-    @apply disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-none;
+    @apply inline-flex items-center justify-center rounded-lg bg-amber px-6 py-3 font-cairo font-bold text-white shadow-xs transition-colors duration-200;
+    @apply hover:bg-amber-dark active:bg-amber-dark disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .harafi-btn-secondary {
-    @apply bg-navy text-white font-cairo font-semibold rounded-full px-6 py-3
-           transition-all duration-300 cursor-pointer;
-    @apply hover:bg-navy-light;
-    @apply active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-lg border border-border bg-white px-6 py-3 font-cairo font-bold text-navy transition-colors duration-200;
+    @apply hover:border-amber hover:text-amber disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .harafi-card {
-    @apply bg-white rounded-2xl shadow-card transition-all duration-400;
-    @apply hover:shadow-card-hover hover:-translate-y-1.5;
-  }
-
-  .geometric-rosette {
-    @apply fixed w-[400px] h-[400px] opacity-[0.06] pointer-events-none animate-slow-rotate;
-  }
-
-  .geometric-rosette.top-right {
-    @apply -top-[100px] -right-[100px];
-  }
-
-  .geometric-rosette.bottom-left {
-    @apply -bottom-[100px] -left-[100px] animate-slow-rotate-reverse;
+    @apply rounded-xl border border-border bg-white shadow-card;
   }
 }
 
@@ -93,40 +96,36 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .section-shell {
+    @apply mx-auto w-full max-w-6xl px-5 md:px-6;
+  }
 }
 
-/* Grain overlay for artisan paper feel */
-.grain-overlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.02;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-}
-
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #FAF7F2;
+  background: #F8F5EF;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #E8D5B0;
-  border-radius: 4px;
+  background: #D4BE9B;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #C8893A;
+  background: #B7792E;
 }
 
-/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  .geometric-rosette {
-    animation: none !important;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

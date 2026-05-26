@@ -1,78 +1,87 @@
-import { Heart, Target, Eye, Users } from 'lucide-react';
+import { Eye, Heart, Target, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const values = [
+interface ValueItem {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+const values: ValueItem[] = [
   {
     icon: Heart,
     title: 'مهمتنا',
-    description: 'تمكين المهنيين والحرفيين السوريين من خلال منصة رقمية تجمعهم بفرص العمل والعملاء، ونساهم في بناء اقتصاد رقمي قوي يعكس مهارات شعبنا.',
+    description: 'تمكين المهنيين والحرفيين السوريين من خلال منصة رقمية تجمعهم بفرص العمل والعملاء وتمنح مهاراتهم حضوراً يليق بها.',
   },
   {
     icon: Target,
     title: 'رؤيتنا',
-    description: 'أن نكون المنصة الرائدة في سوريا لربط المهنيين بالفرص، وأن نكون البوابة الأولى لكل من يبحث عن كفاءات سورية موثوقة.',
+    description: 'أن نكون المنصة الرائدة في سوريا لربط المهنيين بالفرص، والبوابة الأولى لكل من يبحث عن كفاءات سورية موثوقة.',
   },
   {
     icon: Eye,
     title: 'قيمنا',
-    description: 'النزاهة، الجودة، والشفافية هي أساس عملنا. نؤمن بقوة المجتمع ونفخر بأننا نبني جسوراً بين المواهب والفرص.',
+    description: 'النزاهة، الجودة، والشفافية هي أساس عملنا. نؤمن بقوة المجتمع وبناء الثقة بين أصحاب المهارات والعملاء.',
   },
   {
     icon: Users,
     title: 'مجتمعنا',
-    description: 'مجتمعنا هو قلب منصة حرفي. نحن نسعى لبناء شبكة من المحترفين الموثوقين الذين يدعمون بعضهم البعض وينمون معاً.',
+    description: 'مجتمع حرفي هو قلب المنصة: شبكة من المحترفين الموثوقين الذين يدعمون بعضهم بعضاً وينمون معاً.',
   },
 ];
 
 export function AboutPage() {
   return (
-    <main className="min-h-screen bg-parchment pt-[120px] pb-20 px-4">
-      <div className="max-w-[800px] mx-auto">
-        {/* Hero Image */}
-        <div className="rounded-2xl overflow-hidden mb-12 shadow-card">
-          <img
-            src="/images/about-hero.jpg"
-            alt="ورشة حرفي سوري"
-            className="w-full h-64 md:h-80 object-cover"
-          />
-        </div>
+    <main className="min-h-screen bg-parchment px-4 pb-20 pt-32">
+      <div className="mx-auto max-w-6xl">
+        <section className="grid overflow-hidden rounded-xl border border-border bg-white shadow-card md:grid-cols-[0.95fr_1.05fr]">
+          <div className="min-h-[300px] md:min-h-[420px]">
+            <img src="/images/about-hero.jpg" alt="ورشة حرفية سورية" className="h-full w-full object-cover" />
+          </div>
+          <div className="p-6 md:p-10">
+            <div className="font-cairo text-sm font-bold text-amber">عن حرفي</div>
+            <h1 className="mt-3 font-cairo text-4xl font-black leading-tight text-navy md:text-5xl">منصة للمهارة والثقة</h1>
+            <p className="mt-5 font-noto text-base leading-8 text-muted-foreground">
+              منصة سورية تؤمن بأن المهارة تستحق أن تُرى، وأن الثقة تبدأ من تجربة واضحة ومحترمة.
+            </p>
+          </div>
+        </section>
 
-        {/* Title */}
-        <h1 className="font-cairo font-bold text-4xl md:text-[40px] text-navy text-center mb-8">
-          عن حرفي
-        </h1>
+        <section className="mt-12 grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
+          <div className="space-y-5 font-noto text-base leading-9 text-navy/80">
+            <p>
+              حرفي هي المنصة الرقمية السورية المخصصة للمهنيين والحرفيين. تهدف المنصة إلى ربط الكفاءات السورية بفرص العمل والمشاريع، وتوفير مساحة آمنة وموثوقة لعرض المهارات والخبرات.
+            </p>
+            <p>
+              نؤمن بأن سوريا تزخر بالمواهب في مختلف المجالات، ونحن هنا لنساعد هذه المواهب على الوصول إلى الفرص التي تستحقها. سواء كنت حرفياً تقليدياً أو محترفاً في مجال تقني، فحرفي هي مكانك.
+            </p>
+            <p>
+              من خلال منصتنا، يمكن للمهنيين إنشاء ملفات شخصية احترافية، عرض أعمالهم السابقة، والتواصل مباشرة مع العملاء المحتملين. نحن نبني مستقبلاً يعتمد على الكفاءة والثقة.
+            </p>
+          </div>
 
-        {/* Description */}
-        <div className="space-y-6 mb-16">
-          <p className="font-noto text-[17px] text-[#1A1A1A] leading-[1.9] text-justify">
-            حرفي هي المنصة الرقمية السورية الأولى المخصصة للمهنيين والحرفيين. تهدف المنصة إلى ربط الكفاءات السورية بفرص العمل والمشاريع، وتوفير مساحة آمنة وموثوقة لعرض المهارات والخبرات.
-          </p>
-          <p className="font-noto text-[17px] text-[#1A1A1A] leading-[1.9] text-justify">
-            نؤمن بأن سوريا تزخر بالمواهب والكفاءات في مختلف المجالات، ونحن هنا لنساعد هذه المواهب على الوصول إلى الفرص التي تستحقها. سواء كنت حرفي تقليدي أو محترف في مجال تقني، فمنصة حرفي هي مكانك.
-          </p>
-          <p className="font-noto text-[17px] text-[#1A1A1A] leading-[1.9] text-justify">
-            من خلال منصتنا، يمكن للمهنيين إنشاء ملفات شخصية احترافية، عرض أعمالهم السابقة، والتواصل مباشرة مع العملاء المحتملين. نحن نبني مستقبلاً يعتمد على الكفاءة والثقة.
-          </p>
-        </div>
-
-        {/* Values Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {values.map((item, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl p-8 shadow-card"
-            >
-              <div className="w-12 h-12 rounded-full bg-amber/10 flex items-center justify-center mb-5">
-                <item.icon className="w-6 h-6 text-amber" />
-              </div>
-              <h3 className="font-cairo font-semibold text-xl text-navy mb-3">
-                {item.title}
-              </h3>
-              <p className="font-noto text-[15px] text-muted-foreground leading-relaxed">
-                {item.description}
-              </p>
+          <aside className="rounded-xl border border-border bg-white p-6 shadow-card">
+            <h2 className="font-cairo text-2xl font-black text-navy">ما الذي نبنيه؟</h2>
+            <p className="mt-4 font-noto text-base leading-8 text-muted-foreground">
+              تجربة تسجيل واضحة، مجتمع مهني موثوق، ونظام يساعد العملاء على اكتشاف أصحاب المهارات المناسبة بدون تعقيد.
+            </p>
+            <div className="mt-6 h-2 overflow-hidden rounded-full bg-sand-light">
+              <div className="h-full w-2/3 rounded-full bg-amber" />
             </div>
+          </aside>
+        </section>
+
+        <section className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2">
+          {values.map(({ icon: Icon, title, description }) => (
+            <article key={title} className="rounded-xl border border-border bg-white p-6 shadow-card">
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-lg bg-sand-light text-amber">
+                <Icon className="h-5 w-5" />
+              </div>
+              <h3 className="mb-3 font-cairo text-xl font-bold text-navy">{title}</h3>
+              <p className="font-noto text-[15px] leading-8 text-muted-foreground">{description}</p>
+            </article>
           ))}
-        </div>
+        </section>
       </div>
     </main>
   );

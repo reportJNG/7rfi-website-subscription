@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { Menu, X } from 'lucide-react';
+import { Menu, UserPlus, X } from 'lucide-react';
 import { Logo } from '@/components/shared/Logo';
 
 const navLinks = [
@@ -11,107 +11,78 @@ const navLinks = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
 
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
-  };
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
 
   return (
-    <nav className="fixed top-0 right-0 left-0 z-50 h-[72px] backdrop-blur-xl bg-white/85 border-b border-navy/[0.08]">
-      <div className="max-w-[1200px] mx-auto h-full flex items-center justify-between px-6">
-        {/* Logo - on the right in RTL */}
+    <header
+      className={`fixed inset-x-0 top-0 z-50 border-b bg-white/92 backdrop-blur transition-shadow duration-200 ${
+        scrolled ? 'border-border shadow-xs' : 'border-transparent'
+      }`}
+    >
+      <div className="section-shell flex h-20 items-center justify-between">
         <Logo />
 
-        {/* Desktop Nav Links */}
-        <div className="hidden md:flex items-center gap-8">
+        <nav className="hidden items-center gap-1 md:flex" aria-label="التنقل الرئيسي">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`font-noto font-medium text-[15px] text-navy relative pb-1 transition-colors duration-200
-                ${isActive(link.path) ? 'text-amber' : 'hover:text-amber'}`}
+              className={`rounded-lg px-4 py-2 font-cairo text-sm font-semibold transition-colors ${
+                isActive(link.path) ? 'bg-sand-light text-amber' : 'text-navy/75 hover:bg-sand-light hover:text-navy'
+              }`}
             >
               {link.label}
-              {isActive(link.path) && (
-                <span className="absolute bottom-0 right-0 left-0 h-0.5 bg-amber rounded-full" />
-              )}
             </Link>
           ))}
-        </div>
+        </nav>
 
-        {/* CTA Button */}
-        <div className="hidden md:block">
-          <Link
-            to="/submit"
-            className="harafi-btn-primary text-[15px] px-6 py-2.5"
-          >
-            سجّل مجاناً
-          </Link>
-        </div>
+        <Link to="/submit" className="harafi-btn-primary hidden h-11 gap-2 px-5 text-sm md:inline-flex">
+          <UserPlus className="h-4 w-4" />
+          سجّل مجاناً
+        </Link>
 
-        {/* Mobile Hamburger */}
         <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-2 text-navy hover:text-amber transition-colors"
-          aria-label="Toggle menu"
+          onClick={() => setIsOpen((value) => !value)}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-white text-navy transition-colors hover:border-amber hover:text-amber md:hidden"
+          aria-label={isOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+          aria-expanded={isOpen}
         >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
+          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
-      {/* Mobile Drawer */}
       {isOpen && (
-        <>
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-navy/40 md:hidden z-40"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Drawer */}
-          <div className="fixed top-0 right-0 w-[280px] h-full bg-white shadow-xl md:hidden z-50 animate-fade-in-up">
-            <div className="flex flex-col p-6 h-full">
-              <div className="flex items-center justify-between mb-8">
-                <Logo />
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 text-navy hover:text-amber transition-colors"
-                  aria-label="Close menu"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-4 flex-1">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={() => setIsOpen(false)}
-                    className={`font-noto font-medium text-base py-3 px-4 rounded-xl transition-colors
-                      ${isActive(link.path)
-                        ? 'bg-amber/10 text-amber'
-                        : 'text-navy hover:bg-navy/5'
-                      }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-
+        <div className="border-t border-border bg-white md:hidden">
+          <nav className="section-shell flex flex-col gap-2 py-4" aria-label="التنقل عبر الجوال">
+            {navLinks.map((link) => (
               <Link
-                to="/submit"
+                key={link.path}
+                to={link.path}
                 onClick={() => setIsOpen(false)}
-                className="harafi-btn-primary text-center text-base py-3 mt-4"
+                className={`rounded-lg px-4 py-3 font-cairo text-sm font-semibold transition-colors ${
+                  isActive(link.path) ? 'bg-sand-light text-amber' : 'text-navy/75 hover:bg-sand-light hover:text-navy'
+                }`}
               >
-                سجّل مجاناً
+                {link.label}
               </Link>
-            </div>
-          </div>
-        </>
+            ))}
+            <Link to="/submit" onClick={() => setIsOpen(false)} className="harafi-btn-primary mt-2 h-11 gap-2 text-sm">
+              <UserPlus className="h-4 w-4" />
+              سجّل مجاناً الآن
+            </Link>
+          </nav>
+        </div>
       )}
-    </nav>
+    </header>
   );
 }

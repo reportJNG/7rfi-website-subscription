@@ -1,7 +1,8 @@
-import { useState, useRef, useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Upload, X, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Camera, ChevronDown, FileText, Loader2, Lock, Mail, Phone, User, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { subscriberFormInputSchema, parseFormInput } from '@/lib/validations/subscriber.schema';
 import type { SubscriberFormInput } from '@/lib/validations/subscriber.schema';
 import type { City } from '@/types';
@@ -12,11 +13,15 @@ interface SubscribeFormProps {
   cities: City[];
 }
 
+const inputClass =
+  'harafi-input w-full';
+
 export function SubscribeForm({ cities }: SubscribeFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
+  const [profileFileName, setProfileFileName] = useState<string | null>(null);
   const [cvFileName, setCvFileName] = useState<string | null>(null);
 
   const profileInputRef = useRef<HTMLInputElement>(null);
@@ -47,34 +52,38 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
   const genderValue = watch('gender');
   const cityValue = watch('city_id');
 
-  const handleProfilePictureChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setValue('profile_picture', file as unknown as File);
+  const setProfileFile = useCallback(
+    (file?: File | null) => {
+      if (!file) return;
+      setValue('profile_picture', file, { shouldValidate: true });
+      setProfileFileName(file.name);
       const reader = new FileReader();
       reader.onloadend = () => setProfilePreview(reader.result as string);
       reader.readAsDataURL(file);
       clearErrors('profile_picture');
-    }
-  }, [setValue, clearErrors]);
+    },
+    [clearErrors, setValue],
+  );
 
-  const handleCVChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setValue('cv_file', file as unknown as File);
+  const setCvFile = useCallback(
+    (file?: File | null) => {
+      if (!file) return;
+      setValue('cv_file', file, { shouldValidate: true });
       setCvFileName(file.name);
       clearErrors('cv_file');
-    }
-  }, [setValue, clearErrors]);
+    },
+    [clearErrors, setValue],
+  );
 
   const removeProfilePicture = () => {
-    setValue('profile_picture', null);
+    setValue('profile_picture', null, { shouldValidate: true });
     setProfilePreview(null);
+    setProfileFileName(null);
     if (profileInputRef.current) profileInputRef.current.value = '';
   };
 
   const removeCV = () => {
-    setValue('cv_file', null);
+    setValue('cv_file', null, { shouldValidate: true });
     setCvFileName(null);
     if (cvInputRef.current) cvInputRef.current.value = '';
   };
@@ -84,19 +93,17 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
     setGeneralError(null);
 
     try {
-      // 1. Check email duplicate
       const emailExists = await checkEmailExists(formData.email);
       if (emailExists) {
         setError('email', { message: 'هذا البريد الإلكتروني مسجل مسبقاً' });
-        setIsSubmitting(false);
+        toast.error('هذا البريد الإلكتروني مسجل مسبقاً');
         return;
       }
 
-      // 2. Check phone duplicate
       const phoneExists = await checkPhoneExists(formData.phone);
       if (phoneExists) {
         setError('phone', { message: 'رقم الهاتف مسجل مسبقاً' });
-        setIsSubmitting(false);
+        toast.error('رقم الهاتف مسجل مسبقاً');
         return;
       }
 
@@ -104,29 +111,28 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
       let cvUrl: string | null = null;
       const userId = crypto.randomUUID();
 
-      // 3. Upload profile picture if provided
       if (formData.profile_picture instanceof File) {
         try {
           profilePictureUrl = await uploadProfilePicture(formData.profile_picture, userId);
         } catch (err) {
-          setGeneralError(err instanceof Error ? err.message : 'فشل رفع الصورة الشخصية');
-          setIsSubmitting(false);
+          const message = err instanceof Error ? err.message : 'فشل رفع الصورة الشخصية';
+          setGeneralError(message);
+          toast.error(message);
           return;
         }
       }
 
-      // 4. Upload CV if provided
       if (formData.cv_file instanceof File) {
         try {
           cvUrl = await uploadCV(formData.cv_file, userId);
         } catch (err) {
-          setGeneralError(err instanceof Error ? err.message : 'فشل رفع السيرة الذاتية');
-          setIsSubmitting(false);
+          const message = err instanceof Error ? err.message : 'فشل رفع السيرة الذاتية';
+          setGeneralError(message);
+          toast.error(message);
           return;
         }
       }
 
-      // 5. Parse and insert subscriber
       const parsed = parseFormInput(formData);
       await insertSubscriber({
         ...parsed,
@@ -135,9 +141,12 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
       });
 
       setIsSuccess(true);
+      toast.success('تم تسجيلك بنجاح');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setGeneralError(err instanceof Error ? err.message : 'حدث خطأ أثناء التسجيل، يرجى المحاولة لاحقاً');
+      const message = err instanceof Error ? err.message : 'حدث خطأ أثناء التسجيل، يرجى المحاولة لاحقاً';
+      setGeneralError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -148,258 +157,294 @@ export function SubscribeForm({ cities }: SubscribeFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Full Name */}
-      <div>
-        <label className="block font-noto font-medium text-sm text-navy mb-2">
-          الاسم الكامل <span className="text-danger">*</span>
-        </label>
-        <input
-          type="text"
-          placeholder="محمد أحمد"
-          {...register('full_name')}
-          className={`harafi-input w-full ${errors.full_name ? 'harafi-input-error' : ''}`}
-          disabled={isSubmitting}
-        />
-        {errors.full_name && (
-          <p className="text-danger text-[13px] mt-1.5 font-noto">{String(errors.full_name.message)}</p>
-        )}
-      </div>
-
-      {/* Email */}
-      <div>
-        <label className="block font-noto font-medium text-sm text-navy mb-2">
-          البريد الإلكتروني <span className="text-danger">*</span>
-        </label>
-        <input
-          type="email"
-          placeholder="example@email.com"
-          dir="ltr"
-          {...register('email')}
-          className={`harafi-input w-full text-left ${errors.email ? 'harafi-input-error' : ''}`}
-          disabled={isSubmitting}
-        />
-        {errors.email && (
-          <p className="text-danger text-[13px] mt-1.5 font-noto">{String(errors.email.message)}</p>
-        )}
-      </div>
-
-      {/* Phone */}
-      <div>
-        <label className="block font-noto font-medium text-sm text-navy mb-2">
-          رقم الهاتف <span className="text-danger">*</span>
-        </label>
-        <input
-          type="tel"
-          placeholder="09XXXXXXXX"
-          dir="ltr"
-          {...register('phone')}
-          className={`harafi-input w-full text-left ${errors.phone ? 'harafi-input-error' : ''}`}
-          disabled={isSubmitting}
-        />
-        {errors.phone && (
-          <p className="text-danger text-[13px] mt-1.5 font-noto">{String(errors.phone.message)}</p>
-        )}
-      </div>
-
-      {/* Age */}
-      <div>
-        <label className="block font-noto font-medium text-sm text-navy mb-2">
-          العمر <span className="text-danger">*</span>
-        </label>
-        <input
-          type="number"
-          placeholder="25"
-          min={15}
-          max={80}
-          {...register('age')}
-          className={`harafi-input w-full ${errors.age ? 'harafi-input-error' : ''}`}
-          disabled={isSubmitting}
-        />
-        {errors.age && (
-          <p className="text-danger text-[13px] mt-1.5 font-noto">{String(errors.age.message)}</p>
-        )}
-      </div>
-
-      {/* Gender */}
-      <div>
-        <label className="block font-noto font-medium text-sm text-navy mb-3">
-          الجنس <span className="text-danger">*</span>
-        </label>
-        <div className="flex gap-4">
-          {[
-            { value: 'male', label: 'ذكر' },
-            { value: 'female', label: 'أنثى' },
-          ].map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                setValue('gender', option.value as never, { shouldValidate: true });
-                clearErrors('gender');
-              }}
-              className={`flex-1 py-3 px-6 rounded-xl font-noto text-sm font-medium transition-all duration-200
-                ${genderValue === option.value
-                  ? 'bg-amber text-white shadow-cta'
-                  : 'bg-parchment border border-navy/10 text-navy hover:border-amber/40'
-                }
-                ${errors.gender ? 'border-danger' : ''}
-              `}
-              disabled={isSubmitting}
-            >
-              {option.label}
-            </button>
-          ))}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <Field label="الاسم الكامل" required error={errors.full_name?.message}>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="مثال: أحمد محمد العلي"
+            {...register('full_name')}
+            className={`${inputClass} pl-11 ${errors.full_name ? 'border-danger' : ''}`}
+            disabled={isSubmitting}
+          />
+          <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber opacity-70" />
         </div>
-        {errors.gender && (
-          <p className="text-danger text-[13px] mt-1.5 font-noto">{String(errors.gender.message)}</p>
-        )}
-      </div>
+      </Field>
 
-      {/* City */}
-      <div>
-        <label className="block font-noto font-medium text-sm text-navy mb-2">
-          المحافظة <span className="text-danger">*</span>
-        </label>
-        <select
-          {...register('city_id')}
-          value={cityValue?.toString() || ''}
-          onChange={(e) => {
-            setValue('city_id', e.target.value, { shouldValidate: true });
-            clearErrors('city_id');
-          }}
-          className={`harafi-input w-full appearance-none cursor-pointer ${errors.city_id ? 'harafi-input-error' : ''}`}
-          disabled={isSubmitting}
-        >
-          <option value="">اختر المحافظة</option>
-          {cities.map((city) => (
-            <option key={city.id} value={city.id}>
-              {city.name_ar}
-            </option>
-          ))}
-        </select>
-        {errors.city_id && (
-          <p className="text-danger text-[13px] mt-1.5 font-noto">{String(errors.city_id.message)}</p>
-        )}
-      </div>
+      <Field label="البريد الإلكتروني" required error={errors.email?.message}>
+        <div className="relative">
+          <input
+            type="email"
+            placeholder="example@email.com"
+            dir="ltr"
+            {...register('email')}
+            className={`${inputClass} pl-11 text-right ${errors.email ? 'border-danger' : ''}`}
+            disabled={isSubmitting}
+          />
+          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber opacity-70" />
+        </div>
+      </Field>
 
-      {/* Profile Picture (Optional) */}
-      <div>
-        <label className="block font-noto font-medium text-sm text-navy mb-2">
-          الصورة الشخصية <span className="text-muted-foreground font-normal">(اختياري)</span>
-        </label>
+      <Field label="رقم الهاتف" required error={errors.phone?.message}>
+        <div className="relative">
+          <input
+            type="tel"
+            placeholder="09XXXXXXXX"
+            dir="ltr"
+            {...register('phone')}
+            className={`${inputClass} pl-11 text-right ${errors.phone ? 'border-danger' : ''}`}
+            disabled={isSubmitting}
+          />
+          <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber opacity-70" />
+        </div>
+      </Field>
 
-        {profilePreview ? (
-          <div className="relative inline-block">
-            <img
-              src={profilePreview}
-              alt="Profile preview"
-              className="w-24 h-24 rounded-xl object-cover border border-navy/10"
-            />
-            <button
-              type="button"
-              onClick={removeProfilePicture}
-              className="absolute -top-2 -left-2 w-6 h-6 bg-danger text-white rounded-full flex items-center justify-center hover:bg-danger/80 transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="العمر" required error={errors.age?.message}>
+          <input
+            type="number"
+            placeholder="25"
+            min={15}
+            max={80}
+            {...register('age')}
+            className={`${inputClass} ${errors.age ? 'border-danger' : ''}`}
+            disabled={isSubmitting}
+          />
+        </Field>
+
+        <Field label="الجنس" required error={errors.gender?.message}>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: 'male', label: 'ذكر' },
+              { value: 'female', label: 'أنثى' },
+            ].map((option) => {
+              const active = genderValue === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setValue('gender', option.value as never, { shouldValidate: true });
+                    clearErrors('gender');
+                  }}
+                  className={`h-[50px] rounded-xl border-[1.5px] font-cairo transition-all duration-200 ${
+                    active
+                      ? 'border-amber bg-amber font-bold text-white'
+                      : 'border-border bg-white text-navy hover:border-amber'
+                  } ${errors.gender ? 'border-danger' : ''}`}
+                  disabled={isSubmitting}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => profileInputRef.current?.click()}
-            className="w-full py-8 border-2 border-dashed border-navy/15 rounded-xl flex flex-col items-center gap-2
-              hover:border-amber/40 hover:bg-amber/[0.02] transition-all cursor-pointer"
+        </Field>
+      </div>
+
+      <Field label="المحافظة" required error={errors.city_id?.message}>
+        <div className="relative">
+          <select
+            {...register('city_id')}
+            value={cityValue?.toString() || ''}
+            onChange={(event) => {
+              setValue('city_id', event.target.value, { shouldValidate: true });
+              clearErrors('city_id');
+            }}
+            className={`${inputClass} appearance-none cursor-pointer pl-11 ${errors.city_id ? 'border-danger' : ''}`}
             disabled={isSubmitting}
           >
-            <Upload className="w-6 h-6 text-navy/40" />
-            <span className="font-noto text-sm text-muted-foreground">اضغط لرفع صورة</span>
-            <span className="font-noto text-xs text-muted-foreground/60">JPG, PNG, WebP - أقصى 5 ميغابايت</span>
-          </button>
-        )}
+            <option value="">اختر المحافظة</option>
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>
+                {city.name_ar}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber" />
+        </div>
+      </Field>
 
+      <Field label="الصورة الشخصية" hint="اختياري" error={errors.profile_picture?.message}>
+        <UploadZone
+          icon={<Camera className="h-5 w-5 text-amber" />}
+          hint="اضغط لرفع صورة أو اسحبها هنا"
+          detail="JPG, PNG, WebP - أقصى 5 ميغابايت"
+          fileName={profileFileName}
+          preview={profilePreview}
+          disabled={isSubmitting}
+          onPick={() => profileInputRef.current?.click()}
+          onRemove={removeProfilePicture}
+          onDrop={setProfileFile}
+          accept="image/jpeg,image/png,image/webp"
+        />
         <input
           ref={profileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          onChange={handleProfilePictureChange}
+          onChange={(event) => setProfileFile(event.target.files?.[0])}
           className="hidden"
           disabled={isSubmitting}
         />
+      </Field>
 
-        {errors.profile_picture && (
-          <p className="text-danger text-[13px] mt-1.5 font-noto">{String(errors.profile_picture.message)}</p>
-        )}
-      </div>
-
-      {/* CV (Optional) */}
-      <div>
-        <label className="block font-noto font-medium text-sm text-navy mb-2">
-          السيرة الذاتية <span className="text-muted-foreground font-normal">(اختياري)</span>
-        </label>
-
-        {cvFileName ? (
-          <div className="flex items-center gap-3 bg-parchment rounded-xl p-4 border border-navy/10">
-            <FileText className="w-8 h-8 text-amber" />
-            <span className="font-noto text-sm text-navy flex-1 truncate">{cvFileName}</span>
-            <button
-              type="button"
-              onClick={removeCV}
-              className="w-6 h-6 bg-danger text-white rounded-full flex items-center justify-center hover:bg-danger/80 transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => cvInputRef.current?.click()}
-            className="w-full py-8 border-2 border-dashed border-navy/15 rounded-xl flex flex-col items-center gap-2
-              hover:border-amber/40 hover:bg-amber/[0.02] transition-all cursor-pointer"
-            disabled={isSubmitting}
-          >
-            <FileText className="w-6 h-6 text-navy/40" />
-            <span className="font-noto text-sm text-muted-foreground">اضغط لرفع السيرة الذاتية</span>
-            <span className="font-noto text-xs text-muted-foreground/60">PDF فقط - أقصى 10 ميغابايت</span>
-          </button>
-        )}
-
+      <Field label="السيرة الذاتية" hint="اختياري" error={errors.cv_file?.message}>
+        <UploadZone
+          icon={<FileText className="h-5 w-5 text-amber" />}
+          hint="اضغط لرفع السيرة الذاتية أو اسحبها هنا"
+          detail="PDF فقط - أقصى 10 ميغابايت"
+          fileName={cvFileName}
+          disabled={isSubmitting}
+          onPick={() => cvInputRef.current?.click()}
+          onRemove={removeCV}
+          onDrop={setCvFile}
+          accept="application/pdf"
+        />
         <input
           ref={cvInputRef}
           type="file"
           accept="application/pdf"
-          onChange={handleCVChange}
+          onChange={(event) => setCvFile(event.target.files?.[0])}
           className="hidden"
           disabled={isSubmitting}
         />
+      </Field>
 
-        {errors.cv_file && (
-          <p className="text-danger text-[13px] mt-1.5 font-noto">{String(errors.cv_file.message)}</p>
-        )}
-      </div>
-
-      {/* General Error */}
       {generalError && (
-        <div className="bg-danger/10 border border-danger/20 rounded-xl p-4">
-          <p className="text-danger text-sm font-noto text-center">{generalError}</p>
+        <div className="rounded-lg border border-danger/20 bg-danger/10 p-4">
+          <p className="text-center font-noto text-sm text-danger">{generalError}</p>
         </div>
       )}
 
-      {/* Submit Button */}
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full harafi-btn-primary text-lg py-4 flex items-center justify-center gap-2"
+        className="harafi-btn-primary mt-6 h-[54px] w-full gap-2 text-base"
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>جاري التسجيل...</span>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            جاري الإرسال...
           </>
         ) : (
-          'تسجيل'
+          <>
+            <Lock className="h-4 w-4" />
+            تأكيد التسجيل
+            <ArrowLeft className="h-4 w-4" />
+          </>
         )}
       </button>
     </form>
+  );
+}
+
+function Field({
+  label,
+  required,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block font-cairo text-sm font-semibold text-navy">
+        {required && <span className="ml-1 text-amber">*</span>}
+        {label}
+        {hint && <span className="mr-2 font-noto text-xs font-normal text-muted-foreground">({hint})</span>}
+      </label>
+      {children}
+      {error && <p className="mt-1.5 font-noto text-xs text-danger">{String(error)}</p>}
+    </div>
+  );
+}
+
+function UploadZone({
+  icon,
+  hint,
+  detail,
+  fileName,
+  preview,
+  disabled,
+  onPick,
+  onRemove,
+  onDrop,
+  accept,
+}: {
+  icon: React.ReactNode;
+  hint: string;
+  detail: string;
+  fileName: string | null;
+  preview?: string | null;
+  disabled: boolean;
+  onPick: () => void;
+  onRemove: () => void;
+  onDrop: (file: File | null) => void;
+  accept: string;
+}) {
+  const [drag, setDrag] = useState(false);
+
+  const acceptsFile = (file: File) => accept.split(',').includes(file.type);
+
+  return (
+    <div
+      onClick={!fileName && !disabled ? onPick : undefined}
+      onDragOver={(event) => {
+        event.preventDefault();
+        if (!disabled) setDrag(true);
+      }}
+      onDragLeave={() => setDrag(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        setDrag(false);
+        if (disabled) return;
+        const file = event.dataTransfer.files?.[0];
+        if (file && acceptsFile(file)) onDrop(file);
+      }}
+      className={`relative flex min-h-[108px] items-center justify-center rounded-lg border border-dashed px-4 py-3 transition-colors ${
+        disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+      } ${drag ? 'border-amber bg-amber/[0.06]' : 'border-border bg-white hover:border-amber'}`}
+    >
+      {!fileName ? (
+        <div className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-right">
+          <span>{icon}</span>
+          <span>
+            <span className="block font-noto text-sm text-muted-foreground">{hint}</span>
+            <span className="block font-noto text-xs text-muted-foreground/70">{detail}</span>
+          </span>
+        </div>
+      ) : (
+        <div className="flex w-full items-center gap-3">
+          {preview ? (
+            <img src={preview} alt="معاينة الصورة الشخصية" className="h-[72px] w-[72px] rounded-lg object-cover" />
+          ) : (
+            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-lg bg-sand-light text-amber">
+              <FileText className="h-7 w-7" />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-cairo text-sm font-semibold text-navy">{fileName}</div>
+            <div className="font-noto text-xs text-muted-foreground">جاهز للرفع عند تأكيد التسجيل</div>
+          </div>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRemove();
+            }}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground transition-colors hover:border-danger hover:bg-danger hover:text-white"
+            aria-label="إزالة الملف"
+            disabled={disabled}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

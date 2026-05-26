@@ -1,112 +1,78 @@
-import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { Mail, Phone } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
 import { Logo } from '@/components/shared/Logo';
 
-function SocialIcon({ type }: { type: string }) {
-  const icons: Record<string, ReactNode> = {
-    instagram: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><circle cx="12" cy="12" r="5"/><path d="M16.5 7.5h.01"/>
-      </svg>
-    ),
-    facebook: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-      </svg>
-    ),
-    whatsapp: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-        <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1Z"/><path d="M14 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1Z"/><path d="M9.5 15.5a5 5 0 0 0 5 0"/>
-      </svg>
-    ),
-    linkedin: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/>
-      </svg>
-    ),
-    x: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-        <path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/>
-      </svg>
-    ),
-  };
-
-  return icons[type] || null;
-}
+const quickLinks = [
+  { label: 'الرئيسية', path: '/' },
+  { label: 'سجّل الآن', path: '/submit' },
+  { label: 'عن حرفي', path: '/about' },
+];
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-navy text-white">
-      <div className="max-w-[1200px] mx-auto px-6 pt-16 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          {/* Column 1 - About */}
-          <div className="text-center md:text-right">
+    <footer className="border-t border-border bg-white">
+      <div className="section-shell py-12">
+        <div className="grid gap-10 md:grid-cols-[1.2fr_0.8fr_1fr]">
+          <div>
             <Logo />
-            <p className="font-noto text-sm text-white/60 mt-4 leading-relaxed">
-              منصة المهنيين السوريين — نربط الحرفيين بالفرص ونبني مجتمعاً مهنياً قوياً
+            <p className="mt-4 max-w-sm font-noto text-sm leading-8 text-muted-foreground">
+              منصة الحرفيين والمهنيين السوريين. نفتح مساحة موثوقة للمهارة، العمل، وبناء العلاقات المهنية.
             </p>
-          </div>
-
-          {/* Column 2 - Links */}
-          <div className="text-center">
-            <h3 className="font-cairo font-semibold text-base mb-4">روابط</h3>
-            <div className="flex flex-col gap-3">
-              <Link to="/" className="font-noto text-sm text-white/70 hover:text-white transition-colors">
-                الرئيسية
-              </Link>
-              <Link to="/submit" className="font-noto text-sm text-white/70 hover:text-white transition-colors">
-                سجّل الآن
-              </Link>
-              <Link to="/about" className="font-noto text-sm text-white/70 hover:text-white transition-colors">
-                عن حرفي
-              </Link>
-            </div>
-          </div>
-
-          {/* Column 3 - Contact */}
-          <div className="text-center md:text-left">
-            <h3 className="font-cairo font-semibold text-base mb-4">تواصل معنا</h3>
-            <div className="flex flex-col gap-3">
-              <a
-                href="mailto:info@harafi.com"
-                className="flex items-center justify-center md:justify-start gap-2 font-noto text-sm text-white/70 hover:text-white transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                info@harafi.com
-              </a>
-              <a
-                href="tel:+963000000000"
-                className="flex items-center justify-center md:justify-start gap-2 font-noto text-sm text-white/70 hover:text-white transition-colors"
-              >
-                <Phone className="w-4 h-4" />
-                +963 000 000 000
-              </a>
-            </div>
-
-            {/* Social Icons */}
-            <div className="flex items-center justify-center md:justify-start gap-4 mt-6">
-              {['instagram', 'facebook', 'whatsapp', 'linkedin', 'x'].map((social) => (
+            <div className="mt-5 flex gap-2">
+              {[
+                { Icon: Instagram, label: 'Instagram' },
+                { Icon: Facebook, label: 'Facebook' },
+                { Icon: MessageCircle, label: 'Messages' },
+                { Icon: Linkedin, label: 'LinkedIn' },
+              ].map(({ Icon, label }) => (
                 <a
-                  key={social}
+                  key={label}
                   href="#"
-                  className="text-white/60 hover:text-white transition-colors"
-                  aria-label={social}
+                  aria-label={label}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground transition-colors hover:border-amber hover:text-amber"
                 >
-                  <SocialIcon type={social} />
+                  <Icon className="h-4 w-4" />
                 </a>
               ))}
             </div>
           </div>
+
+          <div>
+            <h3 className="font-cairo text-sm font-bold text-navy">روابط سريعة</h3>
+            <ul className="mt-4 space-y-2">
+              {quickLinks.map((link) => (
+                <li key={link.path}>
+                  <Link to={link.path} className="inline-block py-1 font-noto text-sm text-muted-foreground transition-colors hover:text-amber">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-cairo text-sm font-bold text-navy">تواصل معنا</h3>
+            <ul className="mt-4 space-y-3 font-noto text-sm text-muted-foreground">
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-amber" />
+                info@harafi.sy
+              </li>
+              <li className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-amber" />
+                +963 000 000 000
+              </li>
+              <li className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-amber" />
+                سوريا
+              </li>
+            </ul>
+          </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-white/10 mt-12 pt-6">
-          <p className="font-noto text-[13px] text-white/50 text-center">
-            © {currentYear} حرفي — جميع الحقوق محفوظة
-          </p>
+        <div className="mt-10 border-t border-border pt-6 text-center font-noto text-[13px] text-muted-foreground">
+          © {currentYear} حرفي - جميع الحقوق محفوظة
         </div>
       </div>
     </footer>

@@ -1,49 +1,59 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export function useCountAnimation(target: number, duration: number = 2000) {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? target : 0;
+  });
   const [hasAnimated, setHasAnimated] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const targetRef = useRef(target);
+
+  useEffect(() => {
+    targetRef.current = target;
+  }, [target]);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const node = ref.current;
 
-    if (prefersReducedMotion) {
-      setCount(target);
-      return;
-    }
+    if (!node) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
-          const startTime = Date.now();
+        if (!entry.isIntersecting || hasAnimated) return;
 
-          const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            // Ease out cubic
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(eased * target));
-            if (progress < 1) requestAnimationFrame(animate);
-          };
+        setHasAnimated(true);
 
-          requestAnimationFrame(animate);
+        if (prefersReducedMotion) {
+          setCount(targetRef.current);
           observer.disconnect();
+          return;
         }
+
+        const startTime = Date.now();
+        const animate = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setCount(Math.floor(eased * targetRef.current));
+          if (progress < 1) requestAnimationFrame(animate);
+        };
+
+        requestAnimationFrame(animate);
+        observer.disconnect();
       },
-      { threshold: 0.5 }
+      { threshold: 0.5 },
     );
 
-    if (ref.current) observer.observe(ref.current);
+    observer.observe(node);
     return () => observer.disconnect();
-  }, [target, duration, hasAnimated]);
+  }, [duration, hasAnimated]);
 
-  // If target changes after animation, update immediately
   useEffect(() => {
-    if (hasAnimated) {
-      setCount(target);
-    }
+    if (!hasAnimated) return;
+    const frame = requestAnimationFrame(() => setCount(target));
+    return () => cancelAnimationFrame(frame);
   }, [target, hasAnimated]);
 
   return { count, ref };
