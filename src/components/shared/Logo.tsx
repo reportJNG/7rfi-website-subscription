@@ -14,12 +14,14 @@ export function Logo({
   return (
     <Link
       to="/"
-      className={`inline-flex items-center rounded-lg ${className}`}
+      className={`group inline-flex items-center rounded-xl ${className}`}
       aria-label="حرفي"
     >
       <span
-        className={`inline-flex h-14 w-[92px] items-center justify-center md:h-16 md:w-[106px] ${
-          variant === "inverted" ? "rounded-lg bg-white p-1.5" : ""
+        className={`inline-flex h-14 w-[112px] items-center justify-center rounded-xl border p-2 shadow-xs transition-colors duration-200 md:h-16 md:w-[128px] ${
+          variant === "inverted"
+            ? "border-white/20 bg-white"
+            : "border-border bg-white group-hover:border-amber/40"
         }`}
       >
         <img
